@@ -10,8 +10,8 @@ DT_MONITOR = 3
 
 LAMBDA_NORMAL = 5
 LAMBDA_BURST  = 40
-BURST_PROB    = 0.02   # 每个arrival有2%概率触发burst
-BURST_DURATION = 50    # burst持续多少个time unit
+BURST_PROB    = 0.02   # 2% probability for burst
+BURST_DURATION = 50    # duration of burst
 
 MU = {
     'parser':  10,
@@ -21,7 +21,7 @@ MU = {
     'node2':   8,
 }
 
-P_COUNTER = 0.5   # parser→counter的概率，1-P_COUNTER去matcher
+P_COUNTER = 0.5   # probability for parser→counter，1-P_COUNTER routing to matcher
 
 import simpy
 import random
@@ -45,8 +45,8 @@ def job(env, servers, record):
     with servers['parser'].request() as req_parser:
         yield req_parser
         yield env.timeout(random.expovariate(MU['parser']))
-        time_after_parser = env.now
-        parser_delay = env.now - t_arrive
+    record['parser_delay'].append(env.now - t_arrive)
+    t_arrive = env.now
 
     # decide next step: counter or matcher
     if random.random() < P_COUNTER:
@@ -54,29 +54,27 @@ def job(env, servers, record):
         with servers['counter'].request() as req_counter:
             yield req_counter
             yield env.timeout(random.expovariate(MU['counter']))
-        time_after_counter = env.now
-        counter_delay = env.now - time_after_parser
+        record['counter_delay'].append(env.now - t_arrive)
+        t_arrive = env.now
 
         record['node1_arrivals'].append(env.now)
         with (servers['node1'].request()) as req_node1:
             yield req_node1
             yield env.timeout(random.expovariate(MU['node1']))
-        time_after_node1 = env.now
-        node1_delay = env.now - time_after_counter
+        record['node1_delay'].append(env.now - t_arrive)
     else:
         record['matcher_arrivals'].append(env.now)
         with servers['matcher'].request() as req_matcher:
             yield req_matcher
             yield env.timeout(random.expovariate(MU['matcher']))
-        time_after_matcher = env.now
-        matcher_delay = env.now - time_after_parser
+        record['matcher_delay'].append(env.now - t_arrive)
+        t_arrive = env.now
 
         record['node2_arrivals'].append(env.now)
         with (servers['node2'].request()) as req_node2:
             yield req_node2
             yield env.timeout(random.expovariate(MU['node2']))
-        time_after_node2 = env.now
-        node2_delay = env.now - time_after_matcher
+        record['node2_delay'].append(env.now - t_arrive)
 
 def arrivals(env, servers, record):
     burst_end = -1
@@ -93,7 +91,7 @@ def arrivals(env, servers, record):
         yield env.timeout(random.expovariate(lam))
         env.process(job(env, servers, record))
 
-# todo: ave_delay for each node
+
 def monitor(env, servers, record, snapshot=None):
     if snapshot is None:
         snapshot = []
@@ -105,11 +103,14 @@ def monitor(env, servers, record, snapshot=None):
             record[f'{node}_arrivals'] = [t for t in record[f'{node}_arrivals']
                                           if t >= t_window_start]
             arrival_rate = len(record[f'{node}_arrivals']) / DT_MONITOR
+            avg_delay = np.mean(record[f'{node}_delay']) if record[f'{node}_delay'] else 0
+            record[f'{node}_delay'].clear()
 
             data.append([
                 len(s.queue) + s.count, # queue length
                 s.count / s.capacity, # utilisation
                 arrival_rate,
+                avg_delay
             ])
         snapshot.append(data)
         if len(snapshot) % 100 == 0:
@@ -126,11 +127,11 @@ if __name__ == '__main__':
         'node2': node2,
     }
     record = {
-        'parser_arrivals': [],
-        'counter_arrivals': [],
-        'matcher_arrivals': [],
-        'node1_arrivals': [],
-        'node2_arrivals': [],
+        'parser_arrivals': [], 'parser_delay': [],
+        'counter_arrivals': [], 'counter_delay': [],
+        'matcher_arrivals': [], 'matcher_delay': [],
+        'node1_arrivals': [], 'node1_delay': [],
+        'node2_arrivals': [], 'node2_delay': [],
     }
 
     env.process(arrivals(env, servers, record))
