@@ -5,8 +5,8 @@ import os
 
 # Simulation parameters
 T_STABLE = 500
-T_SIM     = 30000
-DT_MONITOR = 3
+T_SIM     = 5 * 3000
+DT_MONITOR = 5
 
 LAMBDA_NORMAL = 5
 LAMBDA_BURST  = 40
@@ -113,7 +113,7 @@ def monitor(env, servers, record, snapshot=None):
                 avg_delay
             ])
         snapshot.append(data)
-        if len(snapshot) % 100 == 0:
+        if len(snapshot) % 300 == 0:
             print(f"snapshot {len(snapshot)}")
         yield env.timeout(DT_MONITOR)
 
