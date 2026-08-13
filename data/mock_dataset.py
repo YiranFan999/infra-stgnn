@@ -1,6 +1,6 @@
-##                  -> counter -> node1
-## source -> parser
-##                  -> matcher -> node2
+##          -> counter -> node1
+## -> parser
+##          -> matcher -> node2
 import os
 
 # Simulation parameters

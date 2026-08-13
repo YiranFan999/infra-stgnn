@@ -1,3 +1,4 @@
+""" DataModule: scaling, sliding-window, train/val/test split for (T, N, F) simulation data. """
 import numpy as np
 import pytorch_lightning as pl
 import torch
