@@ -58,7 +58,7 @@ class DSPDataset(Dataset):
     def __getitem__(self, idx: int):
         return self.X[idx], self.y[idx]
 
-
+# todo: pin_memory changes to GPU if GPU is available
 class DSPDataModule(pl.LightningDataModule):
     """ Lightning wrapper for DSP application (handling scaling and splitting). """
     def __init__(self,
@@ -67,7 +67,7 @@ class DSPDataModule(pl.LightningDataModule):
                  batch_size: int = 32,
                  num_workers: int = 4,
                  scaling: str = "zscore",
-                 pin_memory: bool = True,
+                 pin_memory: bool = False,
                  ):
         super().__init__()
         self.data_path = data_path
