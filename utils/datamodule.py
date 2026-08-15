@@ -1,6 +1,6 @@
 """ DataModule: scaling, sliding-window, train/val/test split for (T, N, F) simulation data. """
 import numpy as np
-import pytorch_lightning as pl
+import lightning as pl
 import torch
 from torch.utils.data import DataLoader, Dataset
 
@@ -65,11 +65,12 @@ class DSPDataModule(pl.LightningDataModule):
                  data_path: str,
                  window: int = 12,
                  batch_size: int = 32,
-                 num_workers: int = 4,
+                 num_workers: int = 0,
                  scaling: str = "zscore",
                  pin_memory: bool = False,
                  ):
         super().__init__()
+        self.scaler = None
         self.data_path = data_path
         self.save_hyperparameters(ignore=["data_path"])
 
@@ -78,8 +79,8 @@ class DSPDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         # Load data
         data = np.load(self.data_path)  # shape: (T, N, F)
-        scaler = FeatureScaler(self.hparams.scaling, data)
-        scaled_data = scaler.forward(data)
+        self.scaler = FeatureScaler(self.hparams.scaling, data)
+        scaled_data = self.scaler.forward(data)
 
         # Split into train/val/test
         T = scaled_data.shape[0]

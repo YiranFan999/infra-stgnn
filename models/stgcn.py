@@ -1,10 +1,11 @@
-import pytorch_lightning as pl
+import lightning as pl
 from torch import nn
 from torch.nn.functional import relu
 from torch.optim import AdamW
 from torch_geometric.nn import ChebConv
 
 from layers.temporal import TemporalConv
+from utils.datamodule import FeatureScaler
 from utils.graph_utils import get_edge_index, get_edge_weight
 from utils.metrics import *
 
@@ -74,9 +75,11 @@ class STGCN(pl.LightningModule):
                  kernel_size=3,
                  K=3,
                  lr=1e-3,
-                 weight_decay=1e-4):
+                 weight_decay=1e-4,
+                 scaler=None):
         super(STGCN, self).__init__()
-        self.save_hyperparameters()
+        self.scaler = scaler
+        self.save_hyperparameters(ignore=['scaler'])
 
         self.register_buffer('edge_index', get_edge_index())
         self.register_buffer('edge_weight', get_edge_weight())
@@ -90,6 +93,7 @@ class STGCN(pl.LightningModule):
     def forward(self, x):
         x = self.block1(x, self.edge_index, self.edge_weight)
         x = self.block2(x, self.edge_index, self.edge_weight)
+        x = x[:, -1, :, :]  # take the last time step
         x = self.output(x)
         return x
 
@@ -109,6 +113,9 @@ class STGCN(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         x, y = batch
         pred = self(x)
+        if self.scaler is not None:
+            pred = self.scaler.inverse(pred)
+            y = self.scaler.inverse(y)
         self.log('test_loss', mse(pred, y))
         self.log('test_mae', mae(pred, y))
         self.log('test_rmse', rmse(pred, y))

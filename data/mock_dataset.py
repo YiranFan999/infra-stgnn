@@ -9,9 +9,9 @@ T_SIM     = 5 * 3000
 DT_MONITOR = 5
 
 LAMBDA_NORMAL = 5
-LAMBDA_BURST  = 40
+LAMBDA_BURST  = 15
 BURST_PROB    = 0.02   # 2% probability for burst
-BURST_DURATION = 50    # duration of burst
+BURST_DURATION = 20    # duration of burst
 
 MU = {
     'parser':  10,
@@ -27,13 +27,12 @@ import simpy
 import random
 import numpy as np
 
-# todo: different capacity
 env = simpy.Environment()
-parser  = simpy.Resource(env, capacity=1) # single server for now
-counter = simpy.Resource(env, capacity=1)
-node1 = simpy.Resource(env, capacity=1)
-node2 = simpy.Resource(env, capacity=1)
-matcher = simpy.Resource(env, capacity=1)
+parser  = simpy.Resource(env, capacity=4)
+counter = simpy.Resource(env, capacity=4)
+node1 = simpy.Resource(env, capacity=4)
+node2 = simpy.Resource(env, capacity=4)
+matcher = simpy.Resource(env, capacity=4)
 
 
 
