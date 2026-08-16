@@ -5,7 +5,7 @@ import torch
 
 from models.stgcn import STGCN
 from utils.datamodule import DSPDataModule
-import lightning as pl
+import lightning.pytorch as pl
 from optuna.integration import PyTorchLightningPruningCallback
 
 import sys
