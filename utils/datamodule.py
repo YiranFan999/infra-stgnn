@@ -64,7 +64,7 @@ class DSPDataModule(pl.LightningDataModule):
     def __init__(self,
                  data_path: str,
                  window: int = 12,
-                 batch_size: int = 32,
+                 batch_size: int = 256,
                  num_workers: int = 0,
                  scaling: str = "zscore",
                  pin_memory: bool = False,

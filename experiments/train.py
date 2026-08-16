@@ -11,7 +11,7 @@ from utils.datamodule import DSPDataModule
 root = Path(__file__).parent.parent
 path = Path(__file__).parent.parent / 'data' / 'mock_data.npy'
 dm = DSPDataModule(str(path), scaling='zscore')
-
+dm.setup()
 model = STGCN(in_channels=4, out_channels=32, lr= 3e-4, scaler=dm.scaler)
 
 logger_dir = root / 'logs'
