@@ -1,6 +1,6 @@
 # infra-stgnn
 
-Comparing spatial-temporal GNN architectures for predicting operator-level metrics (delay, utilisation, queue length) in a data stream processing pipeline.
+Comparing spatial-temporal GNN architectures for predicting operator-level metrics (delay, utilisation, queue length, arrival rate) in a data stream processing pipeline.
 
 ## Models
 
@@ -11,17 +11,31 @@ Comparing spatial-temporal GNN architectures for predicting operator-level metri
 
 ## Data
 
-- **Synthetic** — SimPy simulation of a DSP queueing network (source → parser → counter/matcher → node1/node2), with bursty Poisson arrivals
-- **Real** — GEANT network dataset (23 nodes, 15-min intervals)
+- **Synthetic** — SimPy simulation of a DSP queueing network (source → parser → counter/matcher → node1/node2), with bursty Poisson arrivals. Features: queue length, utilisation, arrival rate, avg delay.
+- **Abilene** — Real-world US academic network traffic (12 nodes, 5-min intervals). Features: per-node in/out flow (Mbit/s).
 
 ## Structure
 
 ```
-data/          simulation and dataset loading
-models/        STGCN, TCN+GAT, WaveNet, GMAN
-utils/         graph construction, datamodule, metrics
-experiments/   training scripts
-notebooks/     results and visualisation
+data/
+  mock_dataset.py       SimPy queueing network simulation
+  abilene_loader.py     Abilene XML parser
+  abilene/              raw XML files (not tracked by git)
+layers/
+  temporal.py           gated temporal convolution (GLU)
+models/
+  stgcn.py              STGCN implementation
+utils/
+  datamodule.py         sliding window dataset, scaler, train/val/test split
+  graph_utils.py        DSP and Abilene graph topology
+  metrics.py            MAE, MSE, RMSE, MAPE
+experiments/
+  train_stgcn.py              STGCN training on synthetic data
+  tune_stgcn.py         Optuna hyperparameter search
+scripts/
+  check_data.py         visualise synthetic data
+  check_abilene.py      verify Abilene graph structure
+  baseline.py           naive last-step baseline
 ```
 
 ## Quickstart
@@ -29,5 +43,5 @@ notebooks/     results and visualisation
 ```bash
 pip install -r requirements.txt
 python data/mock_dataset.py        # generate synthetic data
-python experiments/train.py --model stgcn
+python experiments/train_stgcn.py        # train STGCN
 ```

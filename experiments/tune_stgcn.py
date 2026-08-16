@@ -1,12 +1,12 @@
-from pathlib import Path
-
 import optuna
 import torch
+from optuna.study import study
 
 from models.stgcn import STGCN
 from utils.datamodule import DSPDataModule
 import lightning.pytorch as pl
 from optuna.integration import PyTorchLightningPruningCallback
+import yaml
 
 import sys
 from pathlib import Path
@@ -54,3 +54,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+    best_params = study.best_params
+    best_params['val_loss'] = study.best_value
+    best_params['trial'] = study.best_trial.number
+
+    with open('results/best_params_stgcn.yaml', 'w') as f:
+        yaml.dump(best_params, f)
+    print('Saved to results/best_params_stgcn.yaml')

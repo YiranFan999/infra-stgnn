@@ -1,2 +1,5 @@
 .idea/
 logs/
+data/abilene/
+data/abilene_data.npy
+data/mock_data.npy

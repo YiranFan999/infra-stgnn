@@ -6,7 +6,7 @@ from torch_geometric.nn import ChebConv
 
 from layers.temporal import TemporalConv
 from utils.datamodule import FeatureScaler
-from utils.graph_utils import get_edge_index, get_edge_weight
+from utils.graph_utils import synthetic_graph
 from utils.metrics import *
 
 
@@ -76,13 +76,16 @@ class STGCN(pl.LightningModule):
                  K=3,
                  lr=1e-3,
                  weight_decay=1e-4,
+                 edge_index=None,
+                 edge_weight=None,
                  scaler=None):
         super(STGCN, self).__init__()
         self.scaler = scaler
-        self.save_hyperparameters(ignore=['scaler'])
+        self.save_hyperparameters(ignore=['scaler', 'edge_index', 'edge_weight'])
 
-        self.register_buffer('edge_index', get_edge_index())
-        self.register_buffer('edge_weight', get_edge_weight())
+        SYN_G = synthetic_graph()
+        self.register_buffer('edge_index', edge_index if edge_index is not None else SYN_G.get_edge_index())
+        self.register_buffer('edge_weight', edge_weight if edge_weight is not None else SYN_G.get_edge_weight())
 
         self.block1 = STBlock(in_channels, out_channels, kernel_size, K)
         self.block2 = STBlock(out_channels, out_channels, kernel_size, K)
