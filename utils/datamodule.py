@@ -67,7 +67,7 @@ class DSPDataModule(pl.LightningDataModule):
                  batch_size: int = 256,
                  num_workers: int = 0,
                  scaling: str = "zscore",
-                 pin_memory: bool = False,
+                 pin_memory: bool = True,
                  ):
         super().__init__()
         self.scaler = None

@@ -22,7 +22,7 @@ def objective(trial: optuna.trial.Trial):
     model = STGCN(in_channels=4, out_channels=out_channels, lr=lr, weight_decay=weight_decay, scaler=dm.scaler)
 
     trainer = pl.Trainer(max_epochs=30,
-                         accelerator="mps" if torch.backends.mps.is_available() else "cpu",
+                         accelerator="gpu" if torch.cuda.is_available() else "cpu",
                          callbacks=[pl.callbacks.EarlyStopping(monitor="val_loss", patience=5),
                                     PyTorchLightningPruningCallback(trial, monitor='val_loss')],
                          enable_checkpointing=False,
