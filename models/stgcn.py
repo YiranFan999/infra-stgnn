@@ -120,13 +120,13 @@ class STGCN(pl.LightningModule):
             pred = self.scaler.inverse(pred)
             y = self.scaler.inverse(y)
 
-        FEATURES = ['queue_length', 'utilization', 'arrival_rate', 'avg_delay']
+        # FEATURES = ['queue_length', 'utilization', 'arrival_rate', 'avg_delay']
         self.log('test_loss', mse(pred, y))
         self.log('test_mae', mae(pred, y))
         self.log('test_rmse', rmse(pred, y))
         # self.log('test_mape', mape(pred, y)) # once target gets to 0, mape will explode, so we don't log it
-        for j, feat in enumerate(FEATURES):
-            self.log(f'test_mae_{feat}', mae(pred[:, :, j], y[:, :, j]))
+        for j in range(pred.shape[-1]):
+            self.log(f'test_mae_feature_{j}', mae(pred[:, :, j], y[:, :, j]))
 
     def configure_optimizers(self):
         optim = AdamW(self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay)
