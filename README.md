@@ -30,7 +30,7 @@ utils/
   graph_utils.py        DSP and Abilene graph topology
   metrics.py            MAE, MSE, RMSE, MAPE
 experiments/
-  train_stgcn.py              STGCN training on synthetic data
+  train_stgcn.py        STGCN training on synthetic data
   tune_stgcn.py         Optuna hyperparameter search
 scripts/
   check_data.py         visualise synthetic data
