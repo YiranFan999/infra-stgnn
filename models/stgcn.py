@@ -104,7 +104,7 @@ class STGCN(pl.LightningModule):
         x, y = batch
         output = self(x)
         mse_loss = mse(output, y)
-        self.log(f"{tag}_loss", mse_loss)
+        self.log(f"{tag}_loss", mse_loss, on_step=False, on_epoch=True)
         return mse_loss
 
     def training_step(self, batch, batch_idx):
@@ -124,7 +124,7 @@ class STGCN(pl.LightningModule):
         self.log('test_loss', mse(pred, y))
         self.log('test_mae', mae(pred, y))
         self.log('test_rmse', rmse(pred, y))
-        # self.log('test_mape', mape(pred, y)) # once target gets to 0, mape will explode, so we don't log it
+        self.log('test_mape', mape(pred, y))
         for j in range(pred.shape[-1]):
             self.log(f'test_mae_feature_{j}', mae(pred[:, :, j], y[:, :, j]))
 
