@@ -55,7 +55,7 @@ class STBlock(nn.Module):
 
 class STGCN(pl.LightningModule):
     """
-    Two Sptatio-Temporal blocks + Fully connected layer for single-step prediction.
+    Two Sptatio-Temporal blocks + Fully connected layer for multi-step prediction.
     Args:
         in_channels (int): Number of channels in the input graph
         out_channels (int): hidden layers
@@ -63,10 +63,13 @@ class STGCN(pl.LightningModule):
         K (int): Chebyshev polynomial order for spatial convolution
         lr (float): learning rate
         weight_decay (float): Weight decay for optimizer
+        edge_index: (2, E) tensor of edge indices
+        edge_weight: (E,) tensor of edge weights
+        horizon (int): Number of steps to predict
     Inputs:
         x: (B, T, N, F)
     Outputs:
-        x: (B, T, N, F)
+        x: (B, H, N, F), H is the prediction horizon
     The edge_index and edge_weight are defined in utils/graph_utils.py
     """
     def __init__(self,
@@ -78,6 +81,7 @@ class STGCN(pl.LightningModule):
                  weight_decay=1e-4,
                  edge_index=None,
                  edge_weight=None,
+                 horizon=1,
                  scaler=None):
         super(STGCN, self).__init__()
         self.scaler = scaler
@@ -89,7 +93,7 @@ class STGCN(pl.LightningModule):
 
         self.block1 = STBlock(in_channels, out_channels, kernel_size, K)
         self.block2 = STBlock(out_channels, out_channels, kernel_size, K)
-        self.output = nn.Linear(out_channels, in_channels)
+        self.output = nn.Linear(out_channels, in_channels*horizon)
 
 
 
@@ -97,7 +101,10 @@ class STGCN(pl.LightningModule):
         x = self.block1(x, self.edge_index, self.edge_weight)
         x = self.block2(x, self.edge_index, self.edge_weight)
         x = x[:, -1, :, :]  # take the last time step
-        x = self.output(x)
+        x = self.output(x)  # (B, N, in_channels * horizon)
+        B, N, _ = x.shape
+        x = x.reshape(B, N, self.hparams.horizon, self.hparams.in_channels)
+        x = x.permute(0, 2, 1, 3)  # (B, H, N, F)
         return x
 
     def _shared_step(self, batch, tag: str):
@@ -125,8 +132,10 @@ class STGCN(pl.LightningModule):
         self.log('test_mae', mae(pred, y))
         self.log('test_rmse', rmse(pred, y))
         self.log('test_mape', mape(pred, y))
-        for j in range(pred.shape[-1]):
-            self.log(f'test_mae_feature_{j}', mae(pred[:, :, j], y[:, :, j]))
+        # for j in range(pred.shape[-1]): # per-feature
+        #     self.log(f'test_mae_feature_{j}', mae(pred[:, :, j], y[:, :, j]))
+        for h in range(pred.shape[1]):
+            self.log(f'test_mae_h{h + 1}', mae(pred[:, h], y[:, h]))  # per-horizon
 
     def configure_optimizers(self):
         optim = AdamW(self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay)

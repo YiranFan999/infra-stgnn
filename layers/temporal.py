@@ -19,7 +19,7 @@ class TemporalConv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3):
         super(TemporalConv, self).__init__()
         # input: (N, C, H, W)
-        self.conv = nn.Conv2d(in_channels, out_channels * 2, (1, kernel_size))
+        self.conv = nn.Conv2d(in_channels, out_channels * 2, (1, kernel_size), padding=(0, kernel_size // 2))
         self.residual = nn.Conv2d(in_channels, out_channels, kernel_size=1) \
             if in_channels != out_channels else nn.Identity()
 
@@ -28,7 +28,7 @@ class TemporalConv(nn.Module):
         X = X.permute(0, 3, 2, 1)  # (N, C_in, H, W)
         out = self.conv(X)
         P, Q = out.chunk(2, dim=1)
-        res = self.residual(X)[..., -P.size(-1):]  # transform T dimension to match P's size
+        res = self.residual(X)
         out = P * sigmoid(Q) + res  # GLU gating + residual connection
         out = out.permute(0, 3, 2, 1)
         return out

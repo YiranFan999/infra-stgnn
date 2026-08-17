@@ -44,11 +44,11 @@ class FeatureScaler:
 
 class DSPDataset(Dataset):
     """ Windowed dataset for DSP application. """
-    def __init__(self, data: np.ndarray, window: int): # data: [T, N, F]
+    def __init__(self, data: np.ndarray, window: int, horizon=1): # data: [T, N, F]
         X, y = [], []
-        for t in range(window, len(data)):
+        for t in range(window, len(data) - horizon + 1):
             X.append(data[t - window : t])
-            y.append(data[t])
+            y.append(data[t : t + horizon]) # multi-step prediction
         self.X = torch.from_numpy(np.stack(X)).float()  # shape: (num_samples, window, N, F)
         self.y = torch.from_numpy(np.stack(y)).float()
 
@@ -58,7 +58,7 @@ class DSPDataset(Dataset):
     def __getitem__(self, idx: int):
         return self.X[idx], self.y[idx]
 
-# todo: pin_memory changes to GPU if GPU is available
+
 class DSPDataModule(pl.LightningDataModule):
     """ Lightning wrapper for DSP application (handling scaling and splitting). """
     def __init__(self,
@@ -66,6 +66,7 @@ class DSPDataModule(pl.LightningDataModule):
                  window: int = 12,
                  batch_size: int = 256,
                  num_workers: int = 0,
+                 horizon: int = 1,
                  scaling: str = "zscore",
                  pin_memory: bool = True,
                  ):
@@ -91,9 +92,9 @@ class DSPDataModule(pl.LightningDataModule):
         val_data = scaled_data[train_end:val_end]
         test_data = scaled_data[val_end:]
 
-        self.train_ds = DSPDataset(train_data, self.hparams.window)
-        self.val_ds = DSPDataset(val_data, self.hparams.window)
-        self.test_ds = DSPDataset(test_data, self.hparams.window)
+        self.train_ds = DSPDataset(train_data, self.hparams.window, self.hparams.horizon)
+        self.val_ds = DSPDataset(val_data, self.hparams.window, self.hparams.horizon)
+        self.test_ds = DSPDataset(test_data, self.hparams.window, self.hparams.horizon)
 
     def train_dataloader(self):
         return DataLoader(self.train_ds,

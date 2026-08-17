@@ -12,7 +12,9 @@ import yaml
 ROOT = Path(__file__).parent.parent
 PATH = Path(__file__).parent.parent / 'data' / 'abilene_data.npy'
 NUM_FEATURES = 2
-dm = DSPDataModule(str(PATH), scaling='zscore')
+HORIZON = 6
+KERNEL_SIZE = 5
+dm = DSPDataModule(str(PATH), scaling='zscore', horizon=HORIZON)
 dm.setup()
 
 graph = AbileneGraph()
@@ -24,19 +26,29 @@ model = STGCN(in_channels=NUM_FEATURES,
               weight_decay=params['weight_decay'],
               edge_index=graph.get_edge_index(),
               edge_weight=graph.get_edge_weight(),
-              scaler=dm.scaler # inverse test dataset to see loss on original dataset
+              horizon=HORIZON,
+              kernel_size=KERNEL_SIZE,
+              # scaler=dm.scaler # inverse test dataset to see loss on original dataset
               )
 
 logger_dir = ROOT / 'logs'
 logger_dir.mkdir(exist_ok=True)
-trainer = pl.Trainer(max_epochs=100,
+trainer = pl.Trainer(max_epochs=50,
                      # accelerator='gpu' if torch.cuda.is_available() else 'cpu', # use this when deploying when GPU is available
                      accelerator='mps' if torch.backends.mps.is_available() else 'cpu', # use this for local testing
                      callbacks=[pl.callbacks.EarlyStopping(monitor='val_loss', patience=5),
                                 pl.callbacks.ModelCheckpoint(monitor='val_loss', save_top_k=1)],
-                     logger=TensorBoardLogger(save_dir=str(logger_dir), name='stgcn_abilene'),
+                     logger=TensorBoardLogger(save_dir=str(logger_dir), name=f'stgcn_abilene_h{HORIZON}_kernel{KERNEL_SIZE}'),
                      gradient_clip_val=0.5)
 
 if __name__ == '__main__':
     trainer.fit(model, dm)
-    trainer.test(model, dm)
+    trainer.test(model, dm, ckpt_path='best')
+    results = trainer.callback_metrics
+    out = {k: float(v) for k, v in results.items() if 'test' in k}
+    out['horizon'] = HORIZON
+
+    out_path = ROOT / 'results' / f'stgcn_abilene_h{HORIZON}.yaml'
+    with open(out_path, 'w') as f:
+        yaml.dump(out, f)
+    print(f'Saved to {out_path}')
