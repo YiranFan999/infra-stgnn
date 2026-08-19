@@ -33,4 +33,34 @@ class TemporalConv(nn.Module):
         out = out.permute(0, 3, 2, 1)
         return out
 
+
+class DilatedTemporalConv(nn.Module):
+    """
+    Dilated Casual Temporal Convolution
+    Args:
+        in_channels (int): Number of features in the node
+        out_channels (int): Number of feature in the output
+        kernel_size (int or tuple): Size of the temporal conv kernel
+        dilation (int): Dilation factor, increase with the layers
+    Input:
+        x: (N, W, H, C_in), corresponds to (batch_size, time_step, num_nodes, in_channels)
+    """
+
+    def __init__(self, in_channels, out_channels, kernel_size=2, dilation=1, padding=0):
+        super(DilatedTemporalConv, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, (1, kernel_size), dilation=dilation, padding=padding)
+        self.conv2 = nn.Conv2d(in_channels, out_channels, (1, kernel_size), dilation=dilation, padding=padding)
+        self.g = nn.Tanh()
+        self.sigmoid = nn.Sigmoid()
+
+
+    def forward(self, X):
+        # (B, T, N, F) -> (B, F, N, T)
+        X = X.permute(0, 3, 2, 1)  # (N, C_in, H, W)
+        temporal1 = self.conv1(X)
+        temporal2 = self.conv2(X)
+        out = self.g(temporal1) * self.sigmoid(temporal2)
+        out = out.permute(0, 3, 2, 1)
+        return out
+
     
