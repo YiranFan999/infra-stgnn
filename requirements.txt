@@ -1,0 +1,9 @@
+torch>=2.13.0
+torch-geometric>=2.8.0
+lightning>=2.6.5
+optuna>=4.9.0
+optuna-integration>=0.0.1
+numpy>=1.26.4
+matplotlib>=3.7.2
+seaborn>=0.13.2
+simpy>=4.1.2

@@ -87,6 +87,10 @@ def naive_abilene(horizon=1):
                 'mape': float(np.mean(all_mape[feat])),
             }
             for feat in FEATURES
+        },
+        'per_horizon_mae': {
+            f'h{h + 1}': float(np.mean(all_mae_h[h]))
+            for h in range(horizon)
         }
     }
 
@@ -102,4 +106,4 @@ def naive_abilene(horizon=1):
 
 if __name__ == '__main__':
      # naive_baseline(horizon=6)
-      naive_abilene(horizon=6)
+      naive_abilene(horizon=12)

@@ -7,6 +7,9 @@ import lightning as pl
 from torch import nn
 import torch.nn.functional as F
 
+from utils.metrics import *
+from torch.optim import AdamW
+
 
 class wavenet_layer(nn.Module):
     def __init__(self,
@@ -64,6 +67,9 @@ class GWaveNet(pl.LightningModule):
                  out_dim=12,
                  blocks=4,
                  layers=2,
+                 lr=1e-3,
+                 weight_decay=1e-4,
+                 scaler=None
                  ):
         super(GWaveNet, self).__init__()
         if (len(dilation) != layers):
@@ -82,7 +88,7 @@ class GWaveNet(pl.LightningModule):
                                    kernel_size=(1, 1))
 
         self.end_conv2 = nn.Conv2d(in_channels=end_channels,
-                                   out_channels=out_dim,
+                                   out_channels=out_dim*in_dim, # predict each time step for each feature
                                    kernel_size=(1, 1))
 
         self.supports = supports
@@ -107,8 +113,8 @@ class GWaveNet(pl.LightningModule):
                 self.e1 = nn.Parameter(u[:, :10] @ torch.diag(s[:10]**0.5))
                 self.e2 = nn.Parameter(torch.diag(s[:10]**0.5) @ v[:, :10].t())
                 self.supports_len += 1
-
-        self.save_hyperparameters(ignore=['adpadj', 'adpinit', 'device', 'supports'])
+        self.scaler = scaler
+        self.save_hyperparameters(ignore=['adpadj', 'adpinit', 'device', 'supports', 'scaler'])
 
 
         # calculate receptive field, which will be used to be compared with window in the forward function
@@ -151,6 +157,41 @@ class GWaveNet(pl.LightningModule):
         skip_output = self.end_conv1(skip_output)
         skip_output = relu(skip_output)
         skip_output = self.end_conv2(skip_output)
+        # skip_output: (B, out_dim*in_dim, N, 1), out_dim is the predicted timestep, in_dim is number of features
+        skip_output = skip_output.squeeze(-1) # (B, out_dim*in_dim, N)
+        skip_output = skip_output.permute(0, 2, 1) # (B, N, out_dim*in_dim)
+        skip_output = skip_output.reshape(skip_output.size(0), skip_output.size(1), self.hparams.out_dim, self.hparams.in_dim) # (B, N, out_dim, in_dim)
+        skip_output = skip_output.permute(0, 2, 1, 3)
         return skip_output
 
+    def _shared_step(self, batch, tag):
+        x, y = batch
+        y_hat = self(x)
+        loss = mae(y_hat, y)
+        self.log(f"{tag}_loss", loss, on_step=False, on_epoch=True)
+        return loss
 
+    def training_step(self, batch, batch_idx):
+        return self._shared_step(batch, "train")
+
+    def validation_step(self, batch, batch_idx):
+        return self._shared_step(batch, "val")
+
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        pred = self(x)
+        if self.scaler is not None:
+            pred = self.scaler.inverse(pred)
+            y = self.scaler.inverse(y)
+        self.log('test_loss', mse(pred, y))
+        self.log('test_mae', mae(pred, y))
+        self.log('test_rmse', rmse(pred, y))
+        self.log('test_mape', mape(pred, y))
+        # per-horizon prediction loss
+        for h in range(pred.shape[1]):
+            self.log(f'test_mae_h{h + 1}', mae(pred[:, h], y[:, h]))
+
+    def configure_optimizers(self):
+        optim = AdamW(self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay)
+        sch = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, mode='min', factor=0.5, patience=3)
+        return {"optimizer": optim, "lr_scheduler": {"scheduler": sch, "monitor": "val_loss"}}

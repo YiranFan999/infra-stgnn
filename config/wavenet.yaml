@@ -1,0 +1,43 @@
+# config/wavenet.yaml
+datasource: abilene
+
+synthetic:
+  horizon: 12
+  num_nodes: 5
+  num_features: 4
+  in_dim: 4
+  batch_size: 64
+  dilation: [1, 2]
+  kernel_size: 2
+  res_channels: 32
+  dilation_channels: 32
+  skip_channels: 256
+  end_channels: 512
+  dropout: 0.3
+  blocks: 4
+  layers: 2
+  lr: 0.001
+  weight_decay: 0.0001
+  max_epochs: 50
+  adpadj: True
+  adpinit: null
+
+abilene:
+  horizon: 12
+  num_nodes: 12
+  num_features: 2
+  batch_size: 64
+  dilation: [ 1, 2 ]
+  kernel_size: 2
+  res_channels: 32
+  dilation_channels: 32
+  skip_channels: 256
+  end_channels: 512
+  dropout: 0.3
+  blocks: 4
+  layers: 2
+  lr: 0.001
+  weight_decay: 0.0001
+  max_epochs: 50
+  adpadj: True
+  adpinit: null

@@ -2,4 +2,5 @@
 logs/
 data/abilene/
 data/mock_data.npy
+data/abilene_data.npy
 results/
