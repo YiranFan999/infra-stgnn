@@ -61,7 +61,8 @@ def objective(trial: optuna.trial.Trial, datasource):
 
 
     trainer = pl.Trainer(max_epochs=20,
-                         accelerator="mps" if torch.backends.mps.is_available() else "cpu",
+                         accelerator="gpu" if torch.cuda.is_available() else
+                         "mps" if torch.backends.mps.is_available() else "cpu",
                          callbacks=[pl.callbacks.EarlyStopping(monitor="val_loss", patience=5),
                                     PyTorchLightningPruningCallback(trial, monitor='val_loss')],
                          enable_checkpointing=False,
