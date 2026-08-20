@@ -22,7 +22,6 @@ def objective(trial: optuna.trial.Trial, datasource):
     dropout = trial.suggest_float('dropout', 0.2, 0.5)
     lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
     weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-2, log=True)
-    blocks = trial.suggest_categorical('blocks', [2, 4])
 
     if datasource == 'synthetic':
         g = synthetic_graph()
@@ -55,7 +54,7 @@ def objective(trial: optuna.trial.Trial, datasource):
                              end_channels=512,
                              dilation=[1, 2],
                              out_dim=12,
-                             blocks=blocks,
+                             blocks=4,
                              lr=lr,
                              weight_decay=weight_decay,)
 
