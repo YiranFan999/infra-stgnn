@@ -6,7 +6,7 @@ import torch
 from models import wavenet
 from utils.datamodule import DSPDataModule
 import lightning.pytorch as pl
-from optuna.integration import PyTorchLightningPruningCallback
+from optuna_integration import PyTorchLightningPruningCallback
 import yaml
 from utils.graph_utils import synthetic_graph, AbileneGraph
 
@@ -103,7 +103,7 @@ def main():
                         'adpadj': True,
                         'max_epochs': 50,
                         }}
-
+    (ROOT / 'results').mkdir(exist_ok=True)
     out_path = ROOT / 'results' / 'best_params_wavenet.yaml'
     out_path.parent.mkdir(exist_ok=True)
     with open(out_path, 'w') as f:
