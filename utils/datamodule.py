@@ -69,6 +69,7 @@ class DSPDataModule(pl.LightningDataModule):
                  horizon: int = 1,
                  scaling: str = "zscore",
                  pin_memory: bool = True,
+                 max_samples=None
                  ):
         super().__init__()
         self.scaler = None
@@ -76,10 +77,13 @@ class DSPDataModule(pl.LightningDataModule):
         self.save_hyperparameters(ignore=["data_path"])
 
         self.train_ds, self.val_ds, self.test_ds = None, None, None # defined in `setup`
+        self.max_samples = max_samples
 
     def setup(self, stage=None):
         # Load data
         data = np.load(self.data_path)  # shape: (T, N, F)
+        if self.max_samples is not None:
+            data = data[:self.max_samples]
         self.scaler = FeatureScaler(self.hparams.scaling, data)
         scaled_data = self.scaler.forward(data)
 
