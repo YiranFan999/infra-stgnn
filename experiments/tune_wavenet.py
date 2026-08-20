@@ -78,6 +78,7 @@ def objective(trial: optuna.trial.Trial, datasource):
 
 def main():
     datasource = 'synthetic'
+    (ROOT / 'results').mkdir(exist_ok=True)
     pruner = optuna.pruners.MedianPruner()
     study = optuna.create_study(direction="minimize",
                                 pruner=pruner,
@@ -103,7 +104,7 @@ def main():
                         'adpadj': True,
                         'max_epochs': 50,
                         }}
-    (ROOT / 'results').mkdir(exist_ok=True)
+
     out_path = ROOT / 'results' / 'best_params_wavenet.yaml'
     out_path.parent.mkdir(exist_ok=True)
     with open(out_path, 'w') as f:
