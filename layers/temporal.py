@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 from torch.nn.functional import sigmoid
 
@@ -63,4 +64,44 @@ class DilatedTemporalConv(nn.Module):
         out = out.permute(0, 3, 2, 1)
         return out
 
-    
+
+class GRU(nn.Module):
+    """
+    GRU Layer
+    Args:
+        in_channels (int): Number of features in the node
+        hidden_channels (int): Number of channels in the GRU hidden state
+        num_layers (int): Number of layers in the GRU
+        dropout (float): Dropout rate
+        bidirectional (bool): Whether the GRU is bidirectional
+        num_heads (int): Number of heads in the GRU
+
+    Input:
+        x: (B, T, N, F)
+    Output:
+        h: (B, T, N, F)
+    """
+    def __init__(self, in_channels, hidden_channels, num_layers=1, dropout=0, bidirectional=False, num_heads=4):
+        super(GRU, self).__init__()
+        self.gru = nn.GRU(input_size=in_channels, hidden_size=hidden_channels, num_layers=num_layers, bidirectional=bidirectional, batch_first=True, dropout=dropout)
+        # batch_first: (batch, seq, feature)
+        self.attention = nn.MultiheadAttention(embed_dim=hidden_channels, num_heads=num_heads, batch_first=True)
+        self.w_a = nn.Linear(hidden_channels, hidden_channels)
+
+    def forward(self, x):
+        B, T, N, F = x.shape
+        mask = torch.triu(torch.ones(T, T, dtype=torch.bool, device=x.device), diagonal=1)
+        x = x.permute(0, 2, 1, 3) # (B, T, N, F) -> (B, N, T, F)
+        x = x.reshape(-1, x.shape[-2], x.shape[-1]) # (B*N, T, F)
+        out, h = self.gru(x)
+        h_a, _ = self.attention(out, out, out, need_weights=False, attn_mask=mask)
+        H = self.w_a(out * h_a)
+        H = H.reshape(B, -1, H.shape[1], H.shape[2])
+        H = H.permute(0, 2, 1, 3)
+        return H
+
+
+
+
+
+
