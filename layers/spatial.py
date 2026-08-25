@@ -1,5 +1,7 @@
 import torch
 from torch import nn
+from torch_geometric import edge_index
+from torch_geometric.nn import GATv2Conv
 
 
 class nconv(nn.Module):
@@ -57,4 +59,37 @@ class gcn(nn.Module):
         h = nn.functional.dropout(h, self.dropout, training=self.training)
         h = h.permute(0, 3, 2, 1)
         return h
+
+class GAT(nn.Module):
+    """
+    GAT Layer
+    Args:
+        hidden_channels (int): Number of hidden channels output from temporal attention layer
+        out_channels (int): Number of output channels
+        num_heads (int): Number of heads
+        dropout (float): Dropout rate
+    Inputs:
+        x (torch.Tensor): Input tensor of shape (B, N, F) at last timestep
+        edge_index (torch.Tensor): Edge indices of shape (2, E)
+    """
+    def __init__(self, hidden_channels, out_channels, num_heads=4, dropout=0):
+        super(GAT, self).__init__()
+        self.gat = GATv2Conv(hidden_channels, out_channels, num_heads, concat=False, dropout=dropout)
+
+    @staticmethod
+    def _batch_edge_index(batch_size, edge_index, num_nodes):
+        # copy edge_index B times, edge_index: (2, E)
+        offset = torch.arange(batch_size, device=edge_index.device).view(-1, 1, 1) * num_nodes # (B, 1, 1)
+        support = edge_index.unsqueeze(0) + offset # (B, 2, E)
+        support = support.permute(1, 0, 2) # (2, B, E)
+        return support.reshape(2, -1)
+
+    def forward(self, x, edge_index):
+        # (B, N, F)
+        B, N, F = x.shape
+        x = x.reshape(-1, F)
+        support = self._batch_edge_index(B, edge_index, N)
+        x = self.gat(x, support)
+        x = x.reshape(B, N, F)
+        return x
 

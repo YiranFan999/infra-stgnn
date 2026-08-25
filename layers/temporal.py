@@ -79,7 +79,7 @@ class GRU(nn.Module):
     Input:
         x: (B, T, N, F)
     Output:
-        h: (B, T, N, F)
+        h: (B, N, F), hidden state at the last time step
     """
     def __init__(self, in_channels, hidden_channels, num_layers=1, dropout=0, bidirectional=False, num_heads=4):
         super(GRU, self).__init__()
@@ -98,7 +98,7 @@ class GRU(nn.Module):
         H = self.w_a(out * h_a)
         H = H.reshape(B, -1, H.shape[1], H.shape[2])
         H = H.permute(0, 2, 1, 3)
-        return H
+        return H[:, -1] # the last step has already contained all history information per node
 
 
 
