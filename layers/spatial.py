@@ -72,7 +72,7 @@ class GAT(nn.Module):
         x (torch.Tensor): Input tensor of shape (B, N, F) at last timestep
         edge_index (torch.Tensor): Edge indices of shape (2, E)
     """
-    def __init__(self, hidden_channels, out_channels, num_heads=4, dropout=0):
+    def __init__(self, hidden_channels, out_channels, num_heads, dropout=0):
         super(GAT, self).__init__()
         self.gat = GATv2Conv(hidden_channels, out_channels, num_heads, concat=False, dropout=dropout)
 

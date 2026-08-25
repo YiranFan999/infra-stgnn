@@ -81,9 +81,9 @@ class GRU(nn.Module):
     Output:
         h: (B, N, F), hidden state at the last time step
     """
-    def __init__(self, in_channels, hidden_channels, num_layers=1, dropout=0, bidirectional=False, num_heads=4):
+    def __init__(self, in_channels, hidden_channels, num_layers, dropout, num_heads):
         super(GRU, self).__init__()
-        self.gru = nn.GRU(input_size=in_channels, hidden_size=hidden_channels, num_layers=num_layers, bidirectional=bidirectional, batch_first=True, dropout=dropout)
+        self.gru = nn.GRU(input_size=in_channels, hidden_size=hidden_channels, num_layers=num_layers, batch_first=True, dropout=dropout)
         # batch_first: (batch, seq, feature)
         self.attention = nn.MultiheadAttention(embed_dim=hidden_channels, num_heads=num_heads, batch_first=True)
         self.w_a = nn.Linear(hidden_channels, hidden_channels)
