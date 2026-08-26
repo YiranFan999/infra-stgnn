@@ -22,6 +22,7 @@ class STGAT(pl.LightningModule):
                  scaler=None,
                  lr=1e-4,
                  weight_decay=1e-5,
+                 feature_names=None
                  ):
         super(STGAT, self).__init__()
         self.save_hyperparameters(ignore=['edge_index', 'scaler'])
@@ -77,8 +78,11 @@ class STGAT(pl.LightningModule):
         self.log('test_rmse', rmse(pred, y))
         self.log('test_mape', mape(pred, y))
         # per-horizon prediction loss
-        for h in range(pred.shape[1]):
+        for h in range(2, pred.shape[1], 3):
             self.log(f'test_mae_h{h + 1}', mae(pred[:, h], y[:, h]))
+            for j, name in enumerate(self.hparams.feature_names):
+                self.log(f'test_mae_{name}_h{h+1}', mae(pred[:, h, :, j], y[:, h, :, j]))
+
 
     def configure_optimizers(self):
         optim = AdamW(self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay)
