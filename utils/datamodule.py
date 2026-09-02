@@ -44,19 +44,24 @@ class FeatureScaler:
 
 class DSPDataset(Dataset):
     """ Windowed dataset for DSP application. """
-    def __init__(self, data: np.ndarray, window: int, horizon=1): # data: [T, N, F]
-        X, y = [], []
+    def __init__(self, data: np.ndarray, window: int, horizon=1, time_index=None): # data: [T, N, F]
+        X, y, tx = [], [], []
         for t in range(window, len(data) - horizon + 1):
             X.append(data[t - window : t])
             y.append(data[t : t + horizon]) # multi-step prediction
+            if time_index is not None:
+                tx.append(time_index[t-window : t+horizon])
         self.X = torch.from_numpy(np.stack(X)).float()  # shape: (num_samples, window, N, F)
         self.y = torch.from_numpy(np.stack(y)).float()
+        self.tx = torch.from_numpy(np.stack(tx)).long() if time_index is not None else None
 
     def __len__(self) -> int:
         return self.X.shape[0]
 
     def __getitem__(self, idx: int):
-        return self.X[idx], self.y[idx]
+        if self.tx is None:
+            return self.X[idx], self.y[idx]
+        return self.X[idx], self.y[idx], self.tx[idx]
 
 
 class DSPDataModule(pl.LightningDataModule):
@@ -69,7 +74,8 @@ class DSPDataModule(pl.LightningDataModule):
                  horizon: int = 1,
                  scaling: str = "zscore",
                  pin_memory: bool = True,
-                 max_samples=None
+                 max_samples=None,
+                 steps_per_day=None
                  ):
         super().__init__()
         self.scaler = None
@@ -78,6 +84,13 @@ class DSPDataModule(pl.LightningDataModule):
 
         self.train_ds, self.val_ds, self.test_ds = None, None, None # defined in `setup`
         self.max_samples = max_samples
+
+
+    @staticmethod
+    def _slice(a, l, h):
+        if a is None:
+            return None
+        return a[l:h]
 
     def setup(self, stage=None):
         # Load data
@@ -89,6 +102,15 @@ class DSPDataModule(pl.LightningDataModule):
 
         # Split into train/val/test
         T = scaled_data.shape[0]
+        if self.hparams.steps_per_day is not None:
+            idx = np.arange(T)
+            tod = idx % self.hparams.steps_per_day
+            dow = (idx // self.hparams.steps_per_day) % 7
+            time_step = np.stack([dow, tod], axis=1)  # shape: (T, 2)
+        else:
+            time_step = None
+
+
         train_end = int(T * 0.7)
         val_end = int(T * 0.85)
 
@@ -96,9 +118,13 @@ class DSPDataModule(pl.LightningDataModule):
         val_data = scaled_data[train_end:val_end]
         test_data = scaled_data[val_end:]
 
-        self.train_ds = DSPDataset(train_data, self.hparams.window, self.hparams.horizon)
-        self.val_ds = DSPDataset(val_data, self.hparams.window, self.hparams.horizon)
-        self.test_ds = DSPDataset(test_data, self.hparams.window, self.hparams.horizon)
+
+
+        self.train_ds = DSPDataset(train_data, self.hparams.window, self.hparams.horizon, time_index=self._slice(time_step, 0, train_end))
+        self.val_ds = DSPDataset(val_data, self.hparams.window, self.hparams.horizon, time_index=self._slice(time_step, train_end, val_end))
+        self.test_ds = DSPDataset(test_data, self.hparams.window, self.hparams.horizon, time_index=self._slice(time_step, val_end, T))
+
+
 
     def train_dataloader(self):
         return DataLoader(self.train_ds,
