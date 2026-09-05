@@ -4,7 +4,7 @@ from torch_geometric import edge_index
 from torch_geometric.nn import GATv2Conv
 import torch.nn.functional as F
 
-
+"---------------------------------------- Diffusion Layer ----------------------------------------"
 class nconv(nn.Module):
     """
     Diffusion Layer
@@ -20,6 +20,7 @@ class nconv(nn.Module):
         x = torch.einsum('ncvl,vw->ncwl', (x, A))
         return x.contiguous()
 
+"----------------------------------------- Graph Convolution Layer ---------------------------------"
 class gcn(nn.Module):
     """
     Graph Convolution Layer
@@ -61,6 +62,8 @@ class gcn(nn.Module):
         h = h.permute(0, 3, 2, 1)
         return h
 
+
+"--------------------------------------- Graph Attention Layer -------------------------------------------"
 class GAT(nn.Module):
     """
     GAT Layer
@@ -94,11 +97,27 @@ class GAT(nn.Module):
         x = x.reshape(B, N, F)
         return x
 
+
+"------------------------------------- Spatial Attention Layer --------------------------------------"
 class SpatialAttention(nn.Module):
-    def __init__(self, in_channels, K, d):
+    """
+    Spatial Attention Layer
+    Args:
+        K (int): Number of attention heads
+        d (int): Number of channels in each attention head
+        in_channels are implicitly calculated, which is 2D (concatenate x and ste)
+        out_channels are implicitly calculated, which is D
+    Inputs:
+        x: (B, T, N, F)
+        ste: spatial temporal embedding (B, T, N, F)
+    Outputs:
+        h: (B, T, N, F), hidden spatial attention
+    """
+    def __init__(self, K, d):
         super(SpatialAttention, self).__init__()
         self.K = K
         self.d = d
+        in_channels = 2 * K * d
         out_channels = K * d
         self.q_fc = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=(1, 1), padding=(0, 0), stride=(1, 1), bias=True),

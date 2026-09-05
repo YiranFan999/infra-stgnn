@@ -3,6 +3,7 @@ from torch import nn
 from torch.nn.functional import sigmoid
 import torch.nn.functional as F
 
+"------------------------------- Temporal Convolution Layer ------------------------------"
 class TemporalConv(nn.Module):
     """ Temporal Convolution Layer with GLU gating
 
@@ -35,6 +36,7 @@ class TemporalConv(nn.Module):
         return out
 
 
+"---------------------------------- Dilated Temporal Convolution Layer ---------------------------------"
 class DilatedTemporalConv(nn.Module):
     """
     Dilated Casual Temporal Convolution
@@ -65,6 +67,7 @@ class DilatedTemporalConv(nn.Module):
         return out
 
 
+"---------------------------------------- Gated Recurrent Unit -----------------------------------------------"
 class GRU(nn.Module):
     """
     GRU Layer
@@ -100,13 +103,28 @@ class GRU(nn.Module):
         H = H.permute(0, 2, 1, 3)
         return H[:, -1] # the last step has already contained all history information per node
 
-
+"---------------------------------------- Temporal Attention Layer -------------------------------------------------"
 class TemporalAttention(nn.Module):
-    def __init__(self, in_channels, K, d, mask=True):
+    """
+    Temporal Attention Layer
+    Args:
+        K (int): Number of attention heads
+        d (int): Number of channels in each attention head
+        mask (bool): Whether to apply causal masking to the attention scores
+        in_channels are implicitly calculated, which is 2D (concatenate x and ste)
+        out_channels are implicitly calculated, which is D
+    Inputs:
+        x: (B, T, N, F)
+        ste: spatial temporal embedding (B, T, N, F)
+    Outputs:
+        h: (B, T, N, F), hidden temporal attention
+    """
+    def __init__(self, K, d, mask=True):
         super(TemporalAttention, self).__init__()
         self.K = K
         self.d = d
         self.mask = mask
+        in_channels = 2 * K * d
         out_channels = K * d
         self.q_fc = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=(1, 1), padding=(0, 0), stride=(1, 1), bias=True),
