@@ -144,8 +144,8 @@ class SpatialAttention(nn.Module):
 
     def forward(self, x, ste):
         x = torch.cat([x, ste], dim=-1) # (B, T, N, 2D)
-        x = x.permute(0, 3, 2, 1) # (B, 2D, N, P+Q)
-        q = self.q_fc(x) # (B, D, N, P+Q)
+        x = x.permute(0, 3, 2, 1) # (B, 2D, N, P)
+        q = self.q_fc(x) # (B, D, N, P)
         v = self.v_fc(x)
         k = self.k_fc(x)
 

@@ -2,6 +2,7 @@ from torch import nn
 import torch
 from layers.spatial import SpatialAttention
 from layers.temporal import TemporalAttention
+import torch.nn.functional as F
 
 class GatedFusion(nn.Module):
     """
@@ -53,6 +54,61 @@ class STAttBlock(nn.Module):
         h = self.gatedFusion(hs, ht)
         return h+x
 
+class TransformAttn(nn.Module):
+    def __init__(self, K, d):
+        super(TransformAttn, self).__init__()
+        # key: STE_P; query: STE_Q; value: X
+        in_channels = K*d
+        out_channels = K*d
+        self.K = K
+        self.d = d
+        self.q_fc = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=(1, 1), padding=(0, 0), stride=(1, 1), bias=True),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU()
+        )
+        self.v_fc = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=(1, 1), padding=(0, 0), stride=(1, 1), bias=True),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU()
+        )
+        self.k_fc = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=(1, 1), padding=(0, 0), stride=(1, 1), bias=True),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU()
+        )
+
+        self.out_fc = nn.Sequential(
+            nn.Conv2d(out_channels, out_channels, kernel_size=(1, 1), padding=(0, 0), stride=(1, 1), bias=True),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(),
+            nn.Conv2d(out_channels, out_channels, kernel_size=(1, 1), padding=(0, 0), stride=(1, 1), bias=True),
+        )
+    def forward(self, x, ste_p, ste_q):
+        # x, step_p, step_q: (B, T, N, F)
+        x = x.permute(0, 3, 2, 1)
+        ste_p = ste_p.permute(0, 3, 2, 1)
+        ste_q = ste_q.permute(0, 3, 2, 1)
+        q = self.q_fc(ste_q)
+        k = self.k_fc(ste_p)
+        v = self.v_fc(x)
+
+        # split into K heads
+        q = q.view(q.size(0), self.K, self.d, q.size(2), q.size(3)).permute(0, 1, 3, 4, 2)  # (B, K, N, Q, d)
+        v = v.view(v.size(0), self.K, self.d, v.size(2), v.size(3)).permute(0, 1, 3, 4, 2)  # (B, K, N, P, d)
+        k = k.view(k.size(0), self.K, self.d, k.size(2), k.size(3)).permute(0, 1, 3, 4, 2)  # (B, K, N, P, d)
+
+        attention = (q @ k.transpose(-2, -1)) / (self.d ** 0.5)
+        attention = F.softmax(attention, dim=-1)
+        out = attention @ v  # (B, K, N, Q, d)
+
+        out = out.permute(0, 1, 4, 2, 3)  # (B, K, d, N, Q)
+        out = out.reshape(out.size(0), -1, out.size(3), out.size(4))  # (B, D, N, Q)
+
+        # FC before output
+        out = self.out_fc(out)
+        out = out.permute(0, 3, 2, 1)
+        return out
 
 
 class GMAN(nn.Module):
