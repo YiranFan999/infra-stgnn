@@ -1,0 +1,31 @@
+datasource: synthetic
+
+abilene:
+  feature_names: ['in_flow', 'out_flow']
+  num_features: 2
+  window: 12
+  horizon: 12
+  steps_per_day: 288
+  K: 4
+  d: 16
+  L: 3
+  dropout: 0.1
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0.0001
+  max_epochs: 100
+
+synthetic:
+  feature_names: ['queue_length', 'utilization', 'arrival_rate', 'avg_delay']
+  num_features: 4
+  window: 12
+  horizon: 12
+  steps_per_day: null
+  K: 4
+  d: 16
+  L: 3
+  dropout: 0.1
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0.0001
+  max_epochs: 50

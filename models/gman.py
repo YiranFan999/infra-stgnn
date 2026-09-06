@@ -145,6 +145,7 @@ class GMAN(pl.LightningModule):
         super(GMAN, self).__init__()
         self.save_hyperparameters()
         self.save_hyperparameters(ignore=['se', 'scaler'])
+        self.scaler = scaler
         self.input_fc = nn.Sequential(
             nn.Conv2d(in_channels, hidden_channels, kernel_size=(1, 1), padding=(0, 0), stride=(1, 1), bias=True),
             nn.BatchNorm2d(hidden_channels),

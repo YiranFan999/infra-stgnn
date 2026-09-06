@@ -140,7 +140,7 @@ class DSPDataModule(pl.LightningDataModule):
                           num_workers=self.hparams.num_workers,
                           pin_memory=self.hparams.pin_memory,
                           shuffle=False,
-                          drop_last=True)
+                          drop_last=False)
 
     def test_dataloader(self):
         return DataLoader(self.test_ds,
@@ -148,4 +148,4 @@ class DSPDataModule(pl.LightningDataModule):
                           num_workers=self.hparams.num_workers,
                           pin_memory=self.hparams.pin_memory,
                           shuffle=False,
-                          drop_last=True)
+                          drop_last=False)
