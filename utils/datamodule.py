@@ -71,7 +71,7 @@ class DSPDataModule(pl.LightningDataModule):
                  window: int = 12,
                  batch_size: int = 256,
                  num_workers: int = 0,
-                 horizon: int = 1,
+                 horizon: int = 12,
                  scaling: str = "zscore",
                  pin_memory: bool = True,
                  max_samples=None,
