@@ -14,7 +14,7 @@ ROOT = Path(__file__).parent.parent
 # PATH = Path(__file__).parent.parent / 'data' / 'mock_data.npy'
 
 try:
-    with open(ROOT / 'results' / 'best_params_wavenet.yaml', 'r') as f:
+    with open(ROOT / 'config' / 'best_params_wavenet.yaml', 'r') as f:
         config_file = yaml.safe_load(f)
         datasource = config_file['datasource']
         config = config_file[datasource]
@@ -71,7 +71,8 @@ if __name__ == '__main__':
     dm.setup()
 
 
-    model = wavenet.GWaveNet(device=device,
+    model = wavenet.GWaveNet(feature_names=config['feature_names'],
+                             device=device,
                              num_nodes=config['num_nodes'],
                              dilation=config['dilation'],
                              in_dim=config['num_features'],
@@ -85,10 +86,9 @@ if __name__ == '__main__':
                              skip_channels=config['skip_channels'],
                              end_channels=config['end_channels'],
                              out_dim=config['horizon'],
-                             blocks=config['blocks'],
-                             layers=config['layers'],
                              lr=config['lr'],
-                             weight_decay=config['weight_decay'])
+                             weight_decay=config['weight_decay'],
+                             scaler=dm.scaler)
 
 
     trainer = pl.Trainer(max_epochs=config['max_epochs'],

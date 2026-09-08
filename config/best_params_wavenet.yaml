@@ -1,0 +1,26 @@
+datasource: synthetic
+synthetic:
+  feature_names:
+    - queue_length
+    - utilization
+    - arrival_rate
+    - avg_delay
+  adpadj: true
+  adpinit: null
+  batch_size: 64
+  datasource: synthetic
+  dilation:
+  - 1
+  - 2
+  dilation_channels: 64
+  dropout: 0.3733571366401469
+  end_channels: 512
+  horizon: 12
+  kernel_size: 2
+  lr: 0.0004469796781064664
+  max_epochs: 50
+  num_features: 4
+  num_nodes: 5
+  res_channels: 64
+  skip_channels: 256
+  weight_decay: 0.0014659535892008013

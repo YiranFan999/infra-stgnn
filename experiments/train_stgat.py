@@ -13,7 +13,7 @@ import yaml
 ROOT = Path(__file__).parent.parent
 
 try:
-    with open(ROOT / 'results' / 'best_params_stgat.yaml', 'r') as f:
+    with open(ROOT / 'config' / 'best_params_stgat.yaml', 'r') as f:
         config_file = yaml.safe_load(f)
         datasource = config_file['datasource']
         config = config_file[datasource]

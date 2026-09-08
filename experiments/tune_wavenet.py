@@ -13,7 +13,10 @@ from utils.graph_utils import synthetic_graph, AbileneGraph
 
 
 ROOT = Path(__file__).parent.parent
-
+FEATURES = {
+    'synthetic': ['queue_length', 'utilization', 'arrival_rate', 'avg_delay'],
+    'abilene':   ['in_flow', 'out_flow'],
+}
 
 def objective(trial: optuna.trial.Trial, datasource):
     res_channels = trial.suggest_categorical('res_channels', [16, 32, 64])
@@ -92,6 +95,7 @@ def main():
     best['datasource'] = datasource
     out = {'datasource': datasource,
            datasource: {**best,
+                        'feature_names': FEATURES[datasource],
                         'horizon': 12,
                         'num_nodes': 5 if datasource == 'synthetic' else 12,
                         'num_features': 4 if datasource == 'synthetic' else 2,
@@ -104,7 +108,7 @@ def main():
                         'max_epochs': 50,
                         }}
 
-    out_path = ROOT / 'results' / 'best_params_wavenet.yaml'
+    out_path = ROOT / 'config' / 'best_params_wavenet.yaml'
     out_path.parent.mkdir(exist_ok=True)
     with open(out_path, 'w') as f:
         yaml.dump(out, f)

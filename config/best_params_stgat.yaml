@@ -1,0 +1,21 @@
+datasource: synthetic
+synthetic:
+  batch_size: 64
+  dropout_mlp: 0.22883127327451924
+  dropout_spa: 0.0
+  dropout_tem: 0.29055269823083524
+  feature_names:
+  - queue_length
+  - utilization
+  - arrival_rate
+  - avg_delay
+  hidden_channels: 128
+  horizon: 12
+  lr: 0.0019614117112233868
+  max_epochs: 50
+  num_features: 4
+  num_heads_spa: 8
+  num_heads_tem: 4
+  num_layers: 2
+  num_nodes: 5
+  weight_decay: 1.082389328783017e-05

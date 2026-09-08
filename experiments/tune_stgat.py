@@ -107,7 +107,7 @@ def main():
                         'dropout_tem': best.get('dropout_tem', 0.0),
                         }}
 
-    out_path = ROOT / 'results' / 'best_params_stgat.yaml'
+    out_path = ROOT / 'config' / 'best_params_stgat.yaml'
     out_path.parent.mkdir(exist_ok=True)
     with open(out_path, 'w') as f:
         yaml.dump(out, f)

@@ -1,0 +1,20 @@
+datasource: synthetic
+synthetic:
+  K: 4
+  L: 1
+  batch_size: 64
+  d: 16
+  dropout: 0.46604762469668226
+  feature_names:
+  - queue_length
+  - utilization
+  - arrival_rate
+  - avg_delay
+  horizon: 12
+  lr: 0.006251078080666058
+  max_epochs: 50
+  num_features: 4
+  num_nodes: 5
+  steps_per_day: null
+  weight_decay: 0.00015766397916754625
+  window: 12

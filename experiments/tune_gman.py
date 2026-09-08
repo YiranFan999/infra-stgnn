@@ -18,7 +18,7 @@ FEATURES = {
 }
 
 def objective(trial: optuna.trial.Trial, datasource):
-    K = trial.suggest_int('K', 1, 4)
+    K = trial.suggest_int('K', 2, 4)
     d = trial.suggest_categorical('d', [4, 8, 16])
     L = trial.suggest_int('L', 1, 3)
     dropout = trial.suggest_float('dropout', 0, 0.5)
@@ -26,7 +26,7 @@ def objective(trial: optuna.trial.Trial, datasource):
     weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-2, log=True)
 
     feature_names = FEATURES[datasource]
-    if datasource == 'synthetic': 
+    if datasource == 'synthetic':
         path = ROOT / 'data' / 'mock_data.npy'
         se = torch.load(ROOT / 'data' / 'node2vec_synthetic.pt', weights_only=True)
         num_nodes, in_dim = 5, 4
@@ -81,7 +81,9 @@ def main():
                                 study_name="gman_search",
                                 storage=f"sqlite:///{ROOT / 'results' / 'tune_gman.db'}",
                                 load_if_exists=True, )
-    study.optimize(lambda trial: objective(trial, datasource), n_trials=50)
+    study.optimize(lambda trial: objective(trial, datasource),
+                   n_trials=50,
+                   catch=(RuntimeError,))
 
     best = study.best_params
     out = {'datasource': datasource,
@@ -96,7 +98,7 @@ def main():
                         'max_epochs': 50,
                         }}
 
-    out_path = ROOT / 'results' / 'best_params_gman.yaml'
+    out_path = ROOT / 'config' / 'best_params_gman.yaml'
     out_path.parent.mkdir(exist_ok=True)
     with open(out_path, 'w') as f:
         yaml.dump(out, f)

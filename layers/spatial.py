@@ -150,9 +150,9 @@ class SpatialAttention(nn.Module):
         k = self.k_fc(x)
 
         # split into K heads
-        q = q.view(q.size(0), self.K, self.d, q.size(2), q.size(3)).permute(0, 1, 4, 3, 2) # (B, K, T, N, d)
-        v = v.view(v.size(0), self.K, self.d, v.size(2), v.size(3)).permute(0, 1, 4, 3, 2)
-        k = k.view(k.size(0), self.K, self.d, k.size(2), k.size(3)).permute(0, 1, 4, 3, 2)
+        q = q.reshape(q.size(0), self.K, self.d, q.size(2), q.size(3)).permute(0, 1, 4, 3, 2) # (B, K, T, N, d)
+        v = v.reshape(v.size(0), self.K, self.d, v.size(2), v.size(3)).permute(0, 1, 4, 3, 2)
+        k = k.reshape(k.size(0), self.K, self.d, k.size(2), k.size(3)).permute(0, 1, 4, 3, 2)
 
         attention = (q @ k.transpose(-2, -1)) / (self.d ** 0.5)
         attention = F.softmax(attention, dim=-1)
